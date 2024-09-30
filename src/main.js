@@ -8,7 +8,10 @@ import axios from 'axios';
 let input="";
 let page=1; 
 const PER_PAGE=40;
-document.getElementById('load').style.display = 'none'
+let loadButton = null; 
+
+document.addEventListener("DOMContentLoaded", () => {
+
 document.getElementById("search-images").addEventListener("input",(event)=>{
     input = event.target.value;
     console.log(input);
@@ -27,8 +30,12 @@ document.getElementById("button-search").addEventListener("click",()=>{
 
 
     fetchImages(input);
+    
 
 })
+
+});//DOMContentLoaded
+
 input="";
 let totalHits;
 
@@ -51,12 +58,12 @@ async function fetchImages(query) {
                 timeout: 5000, // 5 saniye sonra otomatik kapanır
                 color: 'warning', // Bildirim rengi (success, warning, info, error)
             });
-            document.getElementById('load').style.display = 'none';
+            if (loadButton) {
+              loadButton.style.display = 'none'; // Hide button
+          }
             return;
         }
         displayImages(hits);
-     
-
     }   
     catch(e){
         console.log("Photos can't taken");
@@ -67,14 +74,15 @@ async function fetchImages(query) {
         });
     }
     console.log(`Current Page: ${page}, Per Page: ${PER_PAGE}, Total Hits: ${totalHits}`);
-
   }
 
   function updateLoadMoreButton(totalHits) {
     const loadedImages = page * PER_PAGE;
     
     if (loadedImages >= totalHits) {
-        document.getElementById('load').style.display = 'none';
+      if (loadButton) {
+        loadButton.style.display = 'none'; // Hide button
+    }
         iziToast.show({
             title: 'End of Results',
             message: "We're sorry, but you've reached the end of search results.",
@@ -83,26 +91,34 @@ async function fetchImages(query) {
             color: 'info',
         });
     } else {
-        document.getElementById('load').style.display = 'block';
+        // Create load button if it doesn't exist
+        if (!loadButton) {
+          loadButton = document.createElement('button');
+          loadButton.id = "load";
+          loadButton.textContent = "Load More";
+
+          document.getElementById("gallery").insertAdjacentElement('afterend', loadButton);
+
+            // Add event listener once when the button is created
+            loadButton.addEventListener('click', () => {
+              page++; // Increment page
+              fetchImages(input); // Fetch images based on input
+          });
+      }
+      document.getElementById("gallery").insertAdjacentElement('afterend', loadButton);
+
+      loadButton.style.display = 'block'; // Show button
+
     }
 }
   
-  document.getElementById('load').addEventListener('click', () => {
-    page++; // Sayfayı arttır
-    fetchImages(input); 
-    console.log("load buttona tıkladım");
-});
+
 
 
 function displayImages(images){
     const imagediv = document.getElementById("image-results");
     const galleryUl = document.getElementById("gallery");
-    const loadButton = document.getElementById('load');
 
-    // Önce "Load More" butonunu kaldır
-    if (loadButton) {
-        loadButton.remove();
-    }
   
     images.forEach(image => {
 
@@ -157,8 +173,8 @@ function displayImages(images){
         imgList.appendChild(infoDiv);
 
         galleryUl.appendChild(imgList);
-        document.body.appendChild(galleryUl);
-
+        imagediv.appendChild(galleryUl);
+        document.body.appendChild(imagediv);
 
     });
  
@@ -168,12 +184,10 @@ function displayImages(images){
         captionDelay: 250
       });
 
-      const imageResults = document.getElementById('image-results');
-      imageResults.appendChild(loadButton);
   
-
-      clickTheElements();
+  
       updateLoadMoreButton(totalHits);
+
 }
 
 
